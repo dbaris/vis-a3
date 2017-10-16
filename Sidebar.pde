@@ -30,8 +30,22 @@ class Sidebar {
           text(s, width * 9 /10, (height / 6) + (height * i/ 3));
           i++;
       }
+  }
+      
+      int stateClick() {
+        int state = -1;
+        for(int i = 0; i < labels.length; i++) {
+          float cx, cy, cr;
+          cx = width * 9 / 10;
+          cy = (height / 6) + (height * i/ 3);
+          cr = height / 6;
+          
+          if (abs(mouseX - cx) < cr / 2 && abs(mouseY - cy) < cr / 2) {
+            state = i;
+          }
+        }
+        
+        return state;
+      }
       
   }
-  
-  
-}
