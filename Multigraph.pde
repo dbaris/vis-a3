@@ -8,7 +8,7 @@ class Multigraph {
    float [] vs;
    Sidebar sidebar;
    int state; 
-   float maxY;
+   float maxY, sumValues;
    
    Multigraph(String[] labels, float[] values){
      this.ls = labels;
@@ -16,10 +16,12 @@ class Multigraph {
      sidebar = new Sidebar();
      this.state = LINE_G;
      this.maxY = values[0];
+     this.sumValues = 0;
      for (float v : values) {
        if (v > this.maxY) {
          this.maxY = v;
        }
+       this.sumValues += v;
      }
      
    }
@@ -93,7 +95,7 @@ class Multigraph {
        float bar_width = interval / 2;
      
        for (int i = 0; i < this.vs.length; i++){
-         float x_pos = width * 0.12 + i * interval - bar_width / 2;
+         float x_pos = width * 0.12 + i * interval;
          float y_pos = height * .85 - ((this.vs[i] / this.maxY) * height * .7);  
          textAlign(CENTER, CENTER);
          textSize(10);
@@ -119,8 +121,60 @@ class Multigraph {
    }
    
    void draw_pie() {
-       textSize(100);
-       text("PIEEEEEEEE", width /2, height /2);
+       float cur_angle = 0;
+       float x_pos = width * 0.4;
+       float y_pos = height * 0.5;
+       float d = width * 0.5;
+       for (int i = 0; i < this.ls.length; i++){
+         float end_angle = cur_angle + this.vs[i] * TWO_PI/this.sumValues;
+         
+         float dist = dist(mouseX, mouseY, x_pos, y_pos);
+      
+         // mouse out of pie
+          if (dist > d/2 || mouseX == x_pos || mouseY == y_pos) {
+            colorMode(HSB, 360, 100, 100);
+            fill(color(360 * i/ this.ls.length, 88, 60));
+            colorMode(RGB, 255);
+          }
+    
+          else {
+            float mouse_angle = 0;
+            if (mouseX > x_pos && mouseY < y_pos) {
+                mouse_angle = TWO_PI - atan((y_pos - mouseY)/(mouseX - x_pos)); 
+            } else if (mouseX < x_pos && mouseY < y_pos) {
+                mouse_angle = PI + atan((y_pos - mouseY) / (x_pos - mouseX));
+            } else if (mouseX < x_pos && mouseY > y_pos) {
+                mouse_angle = PI - atan((mouseY - y_pos)/ (x_pos - mouseX));
+            } else {
+                mouse_angle = atan((mouseY - y_pos) / (mouseX - x_pos));
+            }
+            
+            // mouse on current segment
+            if (mouse_angle > cur_angle && mouse_angle < end_angle) {
+              colorMode(HSB, 360, 100, 100);
+              fill(color(360 * i/ this.ls.length, 50, 90));
+              colorMode(RGB, 255);
+              
+              stroke(0);
+              arc(x_pos, y_pos, d, d, cur_angle, end_angle, PIE);
+              fill(255);
+              rect(width * 0.05, height * 0.05, width * .1, height * .1);
+              fill(0);
+              textAlign(CENTER, CENTER);
+              text(this.ls[i] + ": " + this.vs[i], width * 0.1, height * 0.1); 
+              cur_angle = end_angle;
+              continue;
+            } else {
+              colorMode(HSB, 360, 100, 100);
+              fill(color(360 * i/ this.ls.length, 88, 60));
+              colorMode(RGB, 255);
+            }
+          }
+          
+          stroke(0);
+         arc(x_pos, y_pos, d, d, cur_angle, end_angle, PIE);
+         cur_angle = end_angle;
+       }
    }
    
    void handleClick(){
