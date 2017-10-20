@@ -32,7 +32,7 @@ class Sidebar {
       }
   }
       
-      int stateClick() {
+      int stateClick(int cur_state) {
         int state = -1;
         for(int i = 0; i < labels.length; i++) {
           float cx, cy, cr;
@@ -45,6 +45,29 @@ class Sidebar {
           }
         }
         
+        switch(cur_state){
+            case(LINE_G): {
+              if(state == BAR_G){
+                return LtoB;
+              } else if (state == PIE_G) {
+                return LtoP;
+              }
+          } break;
+            case(BAR_G): {
+                if(state == LINE_G){
+                return BtoL;
+              } else if (state == PIE_G) {
+                return BtoP;
+              }
+           } break;
+             case(PIE_G): {
+                if(state == LINE_G){
+                return PtoL;
+              } else if (state == BAR_G) {
+                return PtoB;
+              }
+           } break;
+        }
         return state;
       }
       

@@ -1,14 +1,24 @@
 // state options
-int LINE_G = 0;
-int BAR_G = 1;
-int PIE_G = 2;
+final int LINE_G = 0;
+final int BAR_G = 1;
+final int PIE_G = 2;
+final int LtoB = 3;
+final int BtoL = 4;
+final int BtoP = 5;
+final int PtoB = 6;
+final int LtoP = 7;
+final int PtoL = 8;
 
 class Multigraph {
    String [] ls;
    float [] vs;
    Sidebar sidebar;
-   int state; 
+   int state; // 0.line, 1.bar, 2.pie, 3.line-bar, 
+              // 4.bar-line, 5.bar-pie, 6.pie-bar
    float maxY, sumValues;
+   float lerp1, lerp2, lerp3, lerp4;
+   
+   
    
    Multigraph(String[] labels, float[] values){
      this.ls = labels;
@@ -17,6 +27,7 @@ class Multigraph {
      this.state = LINE_G;
      this.maxY = values[0];
      this.sumValues = 0;
+     this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 1.0;
      for (float v : values) {
        if (v > this.maxY) {
          this.maxY = v;
@@ -34,6 +45,18 @@ class Multigraph {
          case(1): draw_bar();
                   break;
          case(2): draw_pie();
+                  break;
+         case(3): draw_LtoB();
+                  break;
+         case(4): draw_BtoL();
+                  break;
+         case(5): draw_BtoP();
+                  break;
+         case(6): draw_PtoB();
+                  break;
+         case(7): draw_LtoP();
+                  break;
+         case(8): draw_PtoL();
                   break;
      }
    }
@@ -63,10 +86,16 @@ class Multigraph {
          textAlign(CENTER, CENTER);
          textSize(10);
          
+         // connecting dots with lines
          if ((i + 1) < this.vs.length) {
            float x_posNext = width * 0.12 + (i + 1) * interval;
            float y_posNext = height * .85 - ((this.vs[i + 1] / this.maxY) * height * .7);
-           line(x_pos, y_pos, x_posNext, y_posNext);
+           if (this.state != LINE_G) {
+               line(x_pos, y_pos, lerp(x_pos, x_posNext, 1 - this.lerp1), 
+                                  lerp(y_pos, y_posNext, 1 - this.lerp1));
+           } else {
+               line(x_pos, y_pos, x_posNext, y_posNext);
+           }
          }
          
          pushMatrix();
@@ -83,7 +112,12 @@ class Multigraph {
          } else {
              fill(#205570);
          }
-         ellipse(x_pos, y_pos, 10, 10);
+         
+         if (this.state != LINE_G) {
+             ellipse(x_pos, y_pos, lerp(2, 10, 1 - this.lerp2), lerp(2, 10, 1 - this.lerp2));
+         } else {
+             ellipse(x_pos, y_pos, 10, 10);
+         }
      }
      
    }
@@ -116,7 +150,13 @@ class Multigraph {
          } else {
              fill(#205570);
          }
-         rect(x_pos, y_pos, bar_width, height * .85 - y_pos);
+         
+         if (this.state != BAR_G){
+             rect(x_pos, y_pos, lerp(0, bar_width, this.lerp3),
+                                lerp(2, height * .85 - y_pos, this.lerp4));
+         } else {
+             rect(x_pos, y_pos, bar_width, height * .85 - y_pos);
+         }
      }
    }
    
@@ -178,12 +218,58 @@ class Multigraph {
    }
    
    void handleClick(){
-       int i = sidebar.stateClick();
+       int i = sidebar.stateClick(state);
+       
+       // 0.line, 1.bar, 2.pie, 3.line-bar, 
+              // 4.bar-line, 5.bar-pie, 6.pie-bar
        
        if(i != -1) {
            this.state = i;
+           if (i == LtoB) {
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 0;
+           }
+           println(this.state);
        }
    }
-
+    
+   void draw_LtoB(){
+       if (this.lerp1 < 1) {
+           draw_line();
+           this.lerp1 += .01;
+       } else if (this.lerp2 < 1) {
+           draw_line();
+           this.lerp2 += .01;
+       } else if (this.lerp3 < 1) {
+           draw_bar();
+           this.lerp3 += .01;
+       } else if (this.lerp4 < 1) {
+           draw_bar();
+           this.lerp4 += .01;
+       }
+       else {
+           this.state = BAR_G;
+       } 
+   }
+   
+   void draw_BtoL(){
+       this.state = LINE_G;
+   }
+   
+   void draw_BtoP(){
+       this.state = PIE_G;
+   }
+   
+   void draw_PtoB(){
+       this.state = BAR_G;
+   }
+   
+   void draw_LtoP(){
+       this.state = PIE_G;
+   }
+   
+   void draw_PtoL(){
+       this.state = LINE_G;
+   }
+   
 
 }
