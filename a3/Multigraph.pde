@@ -270,10 +270,18 @@ class Multigraph {
              lerp(x_pos, tan_x, this.lerp5), lerp(scale * height * 0.85, tan_y, this.lerp5));
        } else {
            fill(255);
-           curve(lerp(circle_x, width * 0.4, this.lerp6), lerp(circle_y, height * 0.5, this.lerp6), // control 1
-                 lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5), // point 1
-                 lerp(tan_x, end_x, this.lerp6), lerp(tan_y, end_y, this.lerp6), // point 2
-                 lerp(tan_x, width * 0.4, this.lerp6), lerp(tan_y, height * 0.5, this.lerp6)); // control 2
+           beginShape();
+           curveVertex(lerp(circle_x, width * 0.4, this.lerp6), lerp(circle_y, height * 0.5, this.lerp6));
+           curveVertex(lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5));
+           curveVertex(lerp(tan_x, end_x, this.lerp6), lerp(tan_y, end_y, this.lerp6));
+           curveVertex(lerp(tan_x, width * 0.4, this.lerp6), lerp(tan_y, height * 0.5, this.lerp6));
+           
+           endShape();
+           
+           //curve(lerp(circle_x, width * 0.4, this.lerp6), lerp(circle_y, height * 0.5, this.lerp6), // control 1
+           //      lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5), // point 1
+           //      lerp(tan_x, end_x, this.lerp6), lerp(tan_y, end_y, this.lerp6), // point 2
+           //      lerp(tan_x, width * 0.4, this.lerp6), lerp(tan_y, height * 0.5, this.lerp6)); // control 2
        }
       
        cur_angle = end_angle;
