@@ -16,7 +16,7 @@ class Multigraph {
    int state; // 0.line, 1.bar, 2.pie, 3.line-bar, 
               // 4.bar-line, 5.bar-pie, 6.pie-bar
    float maxY, sumValues;
-   float lerp1, lerp2, lerp3, lerp4;
+   float lerp1, lerp2, lerp3, lerp4, lerp5, lerp6;
    
    
    
@@ -27,7 +27,7 @@ class Multigraph {
      this.state = LINE_G;
      this.maxY = values[0];
      this.sumValues = 0;
-     this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 1.0;
+     this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 = this.lerp6 = 1.0;
      for (float v : values) {
        if (v > this.maxY) {
          this.maxY = v;
@@ -62,7 +62,12 @@ class Multigraph {
    }
    
    void draw_axes(){
-      stroke(0);
+      if (this.state == BtoP || this.state == PtoB) {
+          stroke(lerp(0, 255, this.lerp3));
+          fill(lerp(0, 255, this.lerp3));
+      } else {
+          stroke(0);
+      }
       line(width * .1, height * .85, width * .7, height * .85);
       line(width * .1, height * .85, width * .1, height * .15);
       
@@ -73,6 +78,7 @@ class Multigraph {
         text(this.maxY - (this.maxY * i / 8), width * .05, height * .15 + interval * i);
         line(width * .1, height * .15 + interval * i, width * .12, height * .15 + interval * i);
       } 
+      stroke(0);
    }
    
    void draw_line(){
@@ -99,11 +105,11 @@ class Multigraph {
          }
          
          pushMatrix();
-         translate(x_pos, height * .9);
+         translate(x_pos + interval /4, height * .9);
          rotate(-HALF_PI);
-         translate(-x_pos, -height * .9);
+         translate(-x_pos - interval / 4, -height * .9);
          fill(0);
-         text(this.ls[i], x_pos, height * .9);
+         text(this.ls[i], x_pos + interval/4, height * .9);
          popMatrix();
          
          if (abs(mouseX - x_pos) < 5 && abs(mouseY - y_pos) < 5) {
@@ -139,7 +145,12 @@ class Multigraph {
          //textAlign(CENTER, TOP);
          rotate(-HALF_PI);
          translate(-x_pos - bar_width / 2, -height * .9);
-         fill(0);
+         
+         if (this.state == BtoP || this.state == PtoB) {
+           fill(lerp(0, 255, this.lerp3));
+         } else {
+           fill(0);
+         }
          text(this.ls[i], x_pos + bar_width/2, height * .9);
          popMatrix();
          
@@ -151,9 +162,15 @@ class Multigraph {
              fill(#205570);
          }
          
-         if (this.state != BAR_G){
+         if (this.state == LtoB || this.state == BtoL){
              rect(x_pos, y_pos, lerp(0, bar_width, this.lerp3),
                                 lerp(2, height * .85 - y_pos, this.lerp4));
+         } else if(this.state == BtoP || this.state == PtoB) {
+            noStroke();
+            colorMode(HSB, 360, 100, 100);
+            fill(color(lerp(200, 360 * i/ this.ls.length, lerp1), lerp(71, 88, lerp1), lerp(44, 60, lerp1)));
+            rect(x_pos, y_pos, lerp(bar_width, 2, this.lerp2), height * .85 - y_pos);
+            colorMode(RGB, 255);
          } else {
              rect(x_pos, y_pos, bar_width, height * .85 - y_pos);
          }
@@ -172,6 +189,7 @@ class Multigraph {
       
          // mouse out of pie
           if (dist > d/2 || mouseX == x_pos || mouseY == y_pos) {
+            stroke(255);
             colorMode(HSB, 360, 100, 100);
             fill(color(360 * i/ this.ls.length, 88, 60));
             colorMode(RGB, 255);
@@ -195,9 +213,10 @@ class Multigraph {
               fill(color(360 * i/ this.ls.length, 50, 90));
               colorMode(RGB, 255);
               
-              stroke(0);
+              stroke(255);
               arc(x_pos, y_pos, d, d, cur_angle, end_angle, PIE);
               fill(255);
+              stroke(0);
               rect(width * 0.05, height * 0.05, width * .1, height * .1);
               fill(0);
               textAlign(CENTER, CENTER);
@@ -205,16 +224,60 @@ class Multigraph {
               cur_angle = end_angle;
               continue;
             } else {
+              //noStroke();
+              stroke(255);
               colorMode(HSB, 360, 100, 100);
               fill(color(360 * i/ this.ls.length, 88, 60));
               colorMode(RGB, 255);
             }
           }
           
-          stroke(0);
+          //noStroke();
+          stroke(255);
          arc(x_pos, y_pos, d, d, cur_angle, end_angle, PIE);
          cur_angle = end_angle;
        }
+   }
+   
+   void draw_bp_transition(){
+     int len = this.ls.length;
+     float cur_angle = 0;
+     float r = width * 0.25;
+     
+     for (int i = 0; i < len; i++){
+       float interval = width *.6 / len;
+       float scale = 0.5 * width * PI /( (height * .7/this.maxY) * this.sumValues);
+     
+       float x_pos = scale * (width * 0.12 + i * interval);
+       float y_pos = scale * (height * .85 - ((this.vs[i] / this.maxY) * height * .7)); 
+       
+       float end_angle = cur_angle + this.vs[i] * TWO_PI/this.sumValues;
+       
+       float circle_x = width * 0.4 + cos(cur_angle) * r;
+       float circle_y = height * 0.5 + sin(cur_angle) * r;
+       
+       float tan_x = circle_x - scale * ((this.vs[i] / this.maxY) * height * .7) * sin(cur_angle);
+       float tan_y = circle_y + scale * ((this.vs[i] / this.maxY) * height * .7) * cos(cur_angle);
+       float end_x = width * 0.4 + cos(end_angle) * r;
+       float end_y = height * 0.5 + sin(end_angle) * r;
+       
+       colorMode(HSB, 360, 100, 100);
+       stroke(color(360 * i/ len, 88, 60));
+       colorMode(RGB, 255);
+       
+       if (this.lerp5 < 1) {
+           line(lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5),
+             lerp(x_pos, tan_x, this.lerp5), lerp(scale * height * 0.85, tan_y, this.lerp5));
+       } else {
+           fill(255);
+           curve(lerp(circle_x, width * 0.4, this.lerp6), lerp(circle_y, height * 0.5, this.lerp6), // control 1
+                 lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5), // point 1
+                 lerp(tan_x, end_x, this.lerp6), lerp(tan_y, end_y, this.lerp6), // point 2
+                 lerp(tan_x, width * 0.4, this.lerp6), lerp(tan_y, height * 0.5, this.lerp6)); // control 2
+       }
+      
+       cur_angle = end_angle;
+     }
    }
    
    void handleClick(){
@@ -227,6 +290,10 @@ class Multigraph {
            this.state = i;
            if (i == LtoB) {
                this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 0;
+           } else if (i == BtoL) {
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 1;
+           } else if (i == BtoP) {
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 = this.lerp6 = 0;
            }
            println(this.state);
        }
@@ -252,11 +319,57 @@ class Multigraph {
    }
    
    void draw_BtoL(){
-       this.state = LINE_G;
+       if (this.lerp4 > 0) {
+           draw_bar();
+           this.lerp4 -= .01;
+       } else if (this.lerp3 > 0) {
+           draw_bar();
+           this.lerp3 -= .01;
+       } else if (this.lerp2 > 0) {
+           draw_line();
+           this.lerp2 -= .01;
+       } else if (this.lerp1 > 0) {
+           draw_line();
+           this.lerp1 -= .01;
+       }
+       else {
+           this.state = LINE_G;
+       }
    }
    
    void draw_BtoP(){
-       this.state = PIE_G;
+       //float scale = 0.7 * width * .5 * PI / this.sumValues;
+       float scale = 0.5 * width * PI /( (height * .7/this.maxY) * this.sumValues);
+       //println("scale: " + scale);
+       if (this.lerp1 < 1) {            // change colors
+         draw_bar();
+         this.lerp1 += 0.01;
+       } else if (this.lerp2 < 1) {     // shrink bars
+         draw_bar();
+         this.lerp2 += 0.01;
+       } else if (this.lerp4 < 1) {      // scale axes
+         //scale(1 - this.lerp4);
+         scale(lerp(1, scale, this.lerp4));
+         draw_bar();
+         this.lerp4 += 0.01;
+       } else if (this.lerp3 < 1) {     // fade axes
+         //scale(1 - this.lerp4);
+         scale(lerp(1, scale, this.lerp4));
+         draw_bar();
+         this.lerp3 += 0.01;
+       } else if (this.lerp5 < 1) {     // move lines into circle position
+         draw_bp_transition();
+         this.lerp5 += 0.01;
+       } else if (this.lerp6 < 1) {
+         draw_bp_transition();
+         this.lerp6 += 0.01;
+       } else {
+         draw_bp_transition();
+         
+       }
+       //else {
+       //  this.state = PIE_G;
+       //}
    }
    
    void draw_PtoB(){
