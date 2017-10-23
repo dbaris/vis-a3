@@ -16,7 +16,7 @@ class Multigraph {
    int state; // 0.line, 1.bar, 2.pie, 3.line-bar, 
               // 4.bar-line, 5.bar-pie, 6.pie-bar
    float maxY, sumValues;
-   float lerp1, lerp2, lerp3, lerp4, lerp5, lerp6;
+   float lerp1, lerp2, lerp3, lerp4, lerp5, lerp6, lerp7;
    
    
    
@@ -27,7 +27,7 @@ class Multigraph {
      this.state = LINE_G;
      this.maxY = values[0];
      this.sumValues = 0;
-     this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 = this.lerp6 = 1.0;
+     this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 = this.lerp6 = this.lerp7 = 1.0;
      for (float v : values) {
        if (v > this.maxY) {
          this.maxY = v;
@@ -260,23 +260,38 @@ class Multigraph {
        float tan_y = circle_y + scale * ((this.vs[i] / this.maxY) * height * .7) * cos(cur_angle);
        float end_x = width * 0.4 + cos(end_angle) * r;
        float end_y = height * 0.5 + sin(end_angle) * r;
+       float rot_x = x_pos + circle_x - tan_x;
+       float rot_y = y_pos + circle_y - tan_y;
        
        colorMode(HSB, 360, 100, 100);
        stroke(color(360 * i/ len, 88, 60));
        colorMode(RGB, 255);
        
-       if (this.lerp5 < 1) {
-           line(lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5),
+       if (this.lerp7 < 1){
+           line(x_pos, scale * height * 0.85, lerp(x_pos, rot_x, this.lerp7), lerp(y_pos, rot_y, this.lerp7));
+       } else if (this.lerp5 < 1) { // moving into place
+           line(lerp(rot_x, circle_x, this.lerp5), lerp(rot_y, circle_y, this.lerp5),
              lerp(x_pos, tan_x, this.lerp5), lerp(scale * height * 0.85, tan_y, this.lerp5));
        } else {
            fill(255);
-           beginShape();
-           curveVertex(lerp(circle_x, width * 0.4, this.lerp6), lerp(circle_y, height * 0.5, this.lerp6));
-           curveVertex(lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5));
-           curveVertex(lerp(tan_x, end_x, this.lerp6), lerp(tan_y, end_y, this.lerp6));
-           curveVertex(lerp(tan_x, width * 0.4, this.lerp6), lerp(tan_y, height * 0.5, this.lerp6));
+           float angle_diff = end_angle - cur_angle;
+           float dist = tan(angle_diff / 4) * r;
+           float h = sqrt(pow(r, 2) + pow(dist, 2));
+           float theta = atan(dist/r);
+           float c1x = width * .4 + cos(cur_angle + theta) * h;
+           float c1y = height * .5 + sin(cur_angle + theta) * h;
+           float c2x = width * .4 + cos(end_angle - theta) * h;
+           float c2y = height * .5 + sin(end_angle - theta) * h;
+           float int_x = lerp(tan_x, end_x, this.lerp6);
+           float int_y = lerp(tan_y, end_y, this.lerp6);
            
-           endShape();
+           bezier(circle_x, circle_y, c1x, c1y, c2x, c2y, int_x, int_y);
+           //beginShape();
+           //curveVertex(lerp(circle_x, width * 0.4, this.lerp6), lerp(circle_y, height * 0.5, this.lerp6));
+           //curveVertex(lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5));
+           //curveVertex(lerp(tan_x, end_x, this.lerp6), lerp(tan_y, end_y, this.lerp6));
+           //curveVertex(lerp(tan_x, width * 0.4, this.lerp6), lerp(tan_y, height * 0.5, this.lerp6));
+           //endShape();
            
            //curve(lerp(circle_x, width * 0.4, this.lerp6), lerp(circle_y, height * 0.5, this.lerp6), // control 1
            //      lerp(x_pos, circle_x, this.lerp5), lerp(y_pos, circle_y, this.lerp5), // point 1
@@ -301,7 +316,7 @@ class Multigraph {
            } else if (i == BtoL) {
                this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 1;
            } else if (i == BtoP) {
-               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 = this.lerp6 = 0;
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 = this.lerp6 = this.lerp7 = 0;
            }
            println(this.state);
        }
@@ -365,6 +380,9 @@ class Multigraph {
          scale(lerp(1, scale, this.lerp4));
          draw_bar();
          this.lerp3 += 0.01;
+       } else if (this.lerp7 < 1) {
+         draw_bp_transition();
+         this.lerp7 += 0.01;
        } else if (this.lerp5 < 1) {     // move lines into circle position
          draw_bp_transition();
          this.lerp5 += 0.01;

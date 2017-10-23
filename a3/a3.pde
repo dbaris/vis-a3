@@ -7,7 +7,6 @@ void setup() {
   String filepath = "data.csv";
   p = new Parser(filepath);
   graph = new Multigraph(p.getLabels(), p.getValues());
-  
 }
 
 void draw() {
