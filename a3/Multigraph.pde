@@ -16,7 +16,8 @@ class Multigraph {
    int state; // 0.line, 1.bar, 2.pie, 3.line-bar, 
               // 4.bar-line, 5.bar-pie, 6.pie-bar
    float maxY, sumValues;
-   float lerp1, lerp2, lerp3, lerp4, lerp5, lerp6, lerp7;
+   float lerp1, lerp2, lerp3, lerp4, lerp5, lerp6, lerp7, lerp8, lerp9;
+   int line_pie_state;
    
    
    
@@ -27,14 +28,15 @@ class Multigraph {
      this.state = LINE_G;
      this.maxY = values[0];
      this.sumValues = 0;
-     this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 = this.lerp6 = this.lerp7 = 1.0;
+     this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 
+                = this.lerp6 = this.lerp7  = this.lerp8 = this.lerp9 = 1.0;
      for (float v : values) {
        if (v > this.maxY) {
          this.maxY = v;
        }
        this.sumValues += v;
      }
-     
+     this.line_pie_state = 0;
    }
    
    void render() {
@@ -237,6 +239,9 @@ class Multigraph {
          arc(x_pos, y_pos, d, d, cur_angle, end_angle, PIE);
          cur_angle = end_angle;
        }
+       fill(255);
+       noStroke();
+       ellipse(x_pos, y_pos, lerp(d - 2, 0, this.lerp8), lerp(d - 2, 0, this.lerp8));
    }
    
    void draw_bp_transition(){
@@ -247,7 +252,8 @@ class Multigraph {
      for (int i = 0; i < len; i++){
        float interval = width *.6 / len;
        float scale = 0.5 * width * PI /( (height * .7/this.maxY) * this.sumValues);
-     
+       float y_axis = scale * height * 0.85;
+       
        float x_pos = scale * (width * 0.12 + i * interval);
        float y_pos = scale * (height * .85 - ((this.vs[i] / this.maxY) * height * .7)); 
        
@@ -261,7 +267,7 @@ class Multigraph {
        float end_x = width * 0.4 + cos(end_angle) * r;
        float end_y = height * 0.5 + sin(end_angle) * r;
        float rot_x = x_pos + circle_x - tan_x;
-       float rot_y = y_pos + circle_y - tan_y;
+       float rot_y = y_axis + circle_y - tan_y;
        
        colorMode(HSB, 360, 100, 100);
        stroke(color(360 * i/ len, 88, 60));
@@ -316,9 +322,22 @@ class Multigraph {
            } else if (i == BtoL) {
                this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 1;
            } else if (i == BtoP) {
-               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 = this.lerp6 = this.lerp7 = 0;
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 
+                          = this.lerp6 = this.lerp7 = this.lerp8 = this.lerp9 = 0;
+           } else if (i == PtoB) {
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 
+                          = this.lerp6 = this.lerp7 = this.lerp8 = this.lerp9 = 1;
+           } else if (i == LtoP) {
+               this.line_pie_state = 1;
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 0;
+               this.state = LtoB;
+           } else if (i == PtoL) {
+               this.line_pie_state = 1;
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 
+                          = this.lerp6 = this.lerp7 = this.lerp8 = this.lerp9 = 1;
+               this.state = PtoB;
            }
-           println(this.state);
+           
        }
    }
     
@@ -337,7 +356,14 @@ class Multigraph {
            this.lerp4 += .01;
        }
        else {
-           this.state = BAR_G;
+           if (this.line_pie_state == 0) {
+               this.state = BAR_G;
+           } else {
+               this.line_pie_state = 0;
+               this.state = BtoP;
+               this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = this.lerp5 
+                          = this.lerp6 = this.lerp7 = this.lerp8 = this.lerp9 = 0;
+           }
        } 
    }
    
@@ -361,8 +387,13 @@ class Multigraph {
    }
    
    void draw_BtoP(){
-       //float scale = 0.7 * width * .5 * PI / this.sumValues;
        float scale = 0.5 * width * PI /( (height * .7/this.maxY) * this.sumValues);
+       if (scale > 1 && this.lerp9 < 1) {
+           scale(lerp(1, .5, this.lerp9));
+           this.lerp9 += 0.05;
+       } else if (scale > 1) {
+         scale(0.5);
+       }
        //println("scale: " + scale);
        if (this.lerp1 < 1) {            // change colors
          draw_bar();
@@ -372,12 +403,16 @@ class Multigraph {
          this.lerp2 += 0.01;
        } else if (this.lerp4 < 1) {      // scale axes
          //scale(1 - this.lerp4);
+         if (scale <= 1) {
          scale(lerp(1, scale, this.lerp4));
+         }
          draw_bar();
          this.lerp4 += 0.01;
        } else if (this.lerp3 < 1) {     // fade axes
          //scale(1 - this.lerp4);
-         scale(lerp(1, scale, this.lerp4));
+         if (scale <= 1){
+           scale(scale);
+           } 
          draw_bar();
          this.lerp3 += 0.01;
        } else if (this.lerp7 < 1) {
@@ -389,17 +424,67 @@ class Multigraph {
        } else if (this.lerp6 < 1) {
          draw_bp_transition();
          this.lerp6 += 0.01;
+       } else if (this.lerp8 < 1) {
+         if (scale > 1) {
+             scale(lerp(.5, 1, this.lerp8));
+         }
+         draw_pie();
+         this.lerp8 += 0.01;
        } else {
-         draw_bp_transition();
-         
+         this.state = PIE_G;
        }
-       //else {
-       //  this.state = PIE_G;
-       //}
    }
    
    void draw_PtoB(){
-       this.state = BAR_G;
+       float scale = 0.5 * width * PI /( (height * .7/this.maxY) * this.sumValues);
+       if (scale > 1 && this.lerp9 >0) {
+           scale(lerp(1, .5, this.lerp9));
+           this.lerp9 -= 0.05;
+       } else if (scale > 1) {
+           scale(.5);
+       }
+       if (this.lerp8 > 0) {
+           if (scale > 1) {
+             scale(lerp(.5, 1, this.lerp8));
+         }
+           draw_pie();
+           this.lerp8 -= 0.01;
+       } else if (this.lerp6 > 0) {
+           draw_bp_transition();
+           this.lerp6 -= 0.01;
+       } else if (this.lerp5 > 0) {
+           draw_bp_transition();
+           this.lerp5 -= 0.01;
+       } else if (this.lerp7 > 0) {
+           draw_bp_transition();
+           this.lerp7 -= 0.01;
+       } else if (this.lerp3 > 0) {
+           if (scale <= 1){
+           scale(scale);
+           }
+           draw_bar();
+           this.lerp3 -= 0.01;
+       } else if (this.lerp4 > 0) {
+           if (scale <= 1) {
+             scale(lerp(1, scale, this.lerp4));
+           }
+           draw_bar();
+           this.lerp4 -= 0.01;
+       } else if (this.lerp2 > 0) {
+           draw_bar();
+           this.lerp2 -= 0.01;
+       } else if (this.lerp1 > 0) {
+           draw_bar();
+           this.lerp1 -= 0.01;
+       } else {
+         if (this.line_pie_state == 0) { 
+             this.state = BAR_G;
+         } else {
+             this.line_pie_state = 0;
+             this.lerp1 = this.lerp2 = this.lerp3 = this.lerp4 = 1;
+             this.state = BtoL;
+         }
+       }
    }
    
    void draw_LtoP(){

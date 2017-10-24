@@ -4,7 +4,7 @@ Multigraph graph;
 void setup() {
   size(1000, 600);
   surface.setResizable(true);
-  String filepath = "data.csv";
+  String filepath = "fruit.csv";
   p = new Parser(filepath);
   graph = new Multigraph(p.getLabels(), p.getValues());
 }
